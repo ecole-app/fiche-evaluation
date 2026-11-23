@@ -1492,7 +1492,7 @@ function renderRefView(){
 }
 
 /* ---------- lecture d'une convocation (photo, capture ou texte) par lecture automatique ---------- */
-var OR_KEY=["sk-or-v1-fb2133c6cec2e24fa49f1fb3","8a5d121b2979eadc557a61dd0801f12c8e8b19e7"].join("");
+var OR_KEY="";
 var OR_URL="https://openrouter.ai/api/v1/chat/completions";
 function cvResize(file,maxPx,quality){
   return new Promise(function(res,rej){
@@ -1788,7 +1788,6 @@ function mount(){
   if(!S.info.date)S.info.date=today();
   R.segSync={};
   app.appendChild(buildAccount());
-  app.appendChild(buildConvoc());
   app.appendChild(buildInfo());
   app.appendChild(h('p',{class:'legend'},[
     h('strong',{text:"Chaque arbitre a sa propre fiche."}),
