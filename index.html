@@ -120,6 +120,7 @@ button{font-family:inherit}
 .f label,.f .lbl{display:block;margin-bottom:5px;font:600 11.5px/1.2 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .f input,.f textarea{display:block;width:100%;min-height:44px;padding:10px 11px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--fg);font:16px/1.35 var(--font-body)}
 .f textarea{min-height:88px;resize:vertical}
+textarea.ag{overflow:hidden;resize:none}
 .f input::placeholder,.f textarea::placeholder{color:var(--muted);opacity:.8}
 .seg{display:flex;gap:6px}
 .seg .sg{flex:1}
@@ -841,10 +842,20 @@ function setRate(id,v){
   ref.refresh();
   paint();save();
 }
+/* les zones de texte grandissent avec leur contenu : tout le texte reste visible, sans défilement interne */
+function autoGrow(ta){
+  if(!ta||!ta.offsetParent)return;
+  ta.style.height='auto';
+  ta.style.height=(ta.scrollHeight+3)+'px';
+}
+function growAll(){Array.prototype.forEach.call(document.querySelectorAll('textarea.ag'),autoGrow);}
+document.addEventListener('input',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('ag'))autoGrow(e.target);});
+window.addEventListener('resize',function(){growAll();});
 function toggle(box,btn,force){
   var open=force===undefined?box.hidden:force;
   box.hidden=!open;
   btn.setAttribute('aria-expanded',open?'true':'false');
+  if(open)growAll();
 }
 function buildItem(it){
   var id=it.id, ref={btn:{}}, p=P();
@@ -858,11 +869,11 @@ function buildItem(it){
   var critBtn=h('button',{type:'button',class:'mini','aria-expanded':'false',text:'Critères'});
   critBtn.addEventListener('click',function(){toggle(critBox,critBtn);});
 
-  var ta=h('textarea',{id:'n-'+id,rows:'2',placeholder:"Commentaire : action, n° de joueur… (micro du clavier pour dicter)",'aria-label':'Commentaire : '+it.t});
+  var ta=h('textarea',{class:'ag',id:'n-'+id,rows:'2',placeholder:"Commentaire : action, n° de joueur… (micro du clavier pour dicter)",'aria-label':'Commentaire : '+it.t});
   ta.value=p.n[id]||'';
   var addLine=h('button',{type:'button',class:'mini',hidden:!S.period,text:'+ ligne '+S.period});
   /* « Point à améliorer » : seulement quand l'item est noté Insuffisant, à droite du commentaire */
-  var taA=h('textarea',{id:'ap-'+id,rows:'3',placeholder:"Ce que l'arbitre doit travailler…",'aria-label':'Point à améliorer : '+it.t});
+  var taA=h('textarea',{class:'ag',id:'ap-'+id,rows:'3',placeholder:"Ce que l'arbitre doit travailler…",'aria-label':'Point à améliorer : '+it.t});
   taA.value=p.a[id]||'';
   var cntC=h('span',{class:'qc'}), cntA=h('span',{class:'qc'});
   var colC=h('div',{class:'qcol'},[h('label',{'for':'n-'+id,class:'ql',text:'Commentaire'}),ta,cntC]);
@@ -874,6 +885,7 @@ function buildItem(it){
   function refresh(){
     var q=P(), isI=q.r[id]==='i';
     colA.hidden=!isI;
+    if(isI)setTimeout(growAll,0);
     pair.classList.toggle('two',isI);
     var kc=txtCheck(q.n[id]), ka=txtCheck(q.a[id]);
     cntC.textContent=isI?kc.msg:'';
@@ -954,7 +966,7 @@ function buildSection(s){
 
 /* ---------- construction : bilan, résultat (par arbitre) ---------- */
 function area(key,label){
-  var ta=h('textarea',{id:'a-'+key,rows:'4'});
+  var ta=h('textarea',{class:'ag',id:'a-'+key,rows:'4'});
   ta.value=P()[key]||'';
   ta.addEventListener('input',function(){P()[key]=ta.value;if(key==='bilan'&&bilanLie())S.p[1-S.cur].bilan=ta.value;save();});
   return h('div',{class:'f'},[h('label',{'for':'a-'+key,text:label}),ta]);
@@ -1267,8 +1279,18 @@ function xlSetRowHeight(xml,row,ht){
   return xml.replace(new RegExp('(<row r="'+row+'"[^>]*?) ht="[\\d.]+"'),'$1 ht="'+ht+'"');
 }
 function xlLines(text,per){
+  /* retour à la ligne par mots, comme Excel : on compte les lignes réellement occupées */
   var n=0;
-  String(text).split('\n').forEach(function(l){n+=Math.max(1,Math.ceil(l.length/per));});
+  String(text).split('\n').forEach(function(l){
+    var cur=0, lines=1;
+    l.split(' ').forEach(function(w){
+      while(w.length>per){ if(cur>0){lines++;cur=0;} w=w.slice(per); lines++; }
+      if(cur===0)cur=w.length;
+      else if(cur+1+w.length<=per)cur+=1+w.length;
+      else{lines++;cur=w.length;}
+    });
+    n+=lines;
+  });
   return n;
 }
 function xlSpec(i,withNotes){
@@ -1300,18 +1322,18 @@ function xlSpec(i,withNotes){
         if(parts.length){
           var t=parts.join('\n');
           c['G'+row]=t;
-          fit.push({rows:[row],text:t,per:95});
+          fit.push({rows:[row],text:t,per:68});
         }
       }
     });
   });
   if(p.bilan){
     var t1="Bilan, points positifs et commentaires éventuels : \n"+p.bilan;
-    c.A54=t1;fit.push({rows:[54,55],text:t1,per:150});
+    c.A54=t1;fit.push({rows:[54,55],text:t1,per:135});
   }
   if(p.pistes){
     var t2="Pistes de travail :  \n"+p.pistes;
-    c.A56=t2;fit.push({rows:[56,57],text:t2,per:150});
+    c.A56=t2;fit.push({rows:[56,57],text:t2,per:135});
   }
   c.C61=String(grisCount(p))+'  *';
   var ev=effVerdict(p);
@@ -1335,7 +1357,7 @@ function buildXlsx(i,withNotes){
         xml=xlSetCell(xml,ref,spec.cells[ref],ns);
       });
       spec.fit.forEach(function(f){
-        var each=(xlLines(f.text,f.per)*13+8)/f.rows.length;
+        var each=(xlLines(f.text,f.per)*13.5+10)/f.rows.length;
         f.rows.forEach(function(row){
           if(each>xlRowHeight(xml,row))xml=xlSetRowHeight(xml,row,Math.min(409,Math.round(each*4)/4));
         });
@@ -1779,6 +1801,7 @@ function mountRef(){
   refwrap.appendChild(buildBilan());
   refwrap.appendChild(buildResult());
   paint();
+  setTimeout(growAll,0);
 }
 function mount(){
   VIEW='edit';DLBTNS=[];
@@ -1877,6 +1900,7 @@ document.addEventListener('visibilitychange',wake);
 /* sauvegarde immédiate quand la page se cache ou se ferme */
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush();});
 window.addEventListener('pagehide',flush);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')growAll();});
 
 mount();
 (function(){
@@ -1886,6 +1910,7 @@ mount();
   b.addEventListener('click',function(){var n=cur()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('fiche-theme',n);}catch(e){}paint();});
   paint();
 })();
+setTimeout(growAll,50);
 
 /* enregistrement sur le site : compte de l'observateur (Firebase), fiches lues et écrites par lui seul */
 function cloudInit(){
