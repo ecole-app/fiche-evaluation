@@ -388,6 +388,7 @@ function load(){
 }
 var S=load();
 if(S.info.bilanDiff===undefined&&S.p[0].bilan&&S.p[1].bilan&&S.p[0].bilan!==S.p[1].bilan)S.info.bilanDiff='1';
+if(S.info.aDiff===undefined&&JSON.stringify(S.p[0].a)!==JSON.stringify(S.p[1].a))S.info.aDiff='1';
 function P(){return S.p[S.cur];}
 function refName(i){
   var n=(S.info['arb'+(i+1)]||'').trim();
@@ -429,7 +430,7 @@ function hhmm(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes()
 function newId(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function hasContent(){
   var I=S.info,k,i,p;
-  for(k in I){if(k!=='date'&&k!=='bilanDiff'&&I[k])return true;}
+  for(k in I){if(k!=='date'&&k!=='bilanDiff'&&k!=='aDiff'&&I[k])return true;}
   for(i=0;i<2;i++){
     p=S.p[i];
     if(Object.keys(p.r).length||Object.keys(p.n).length||Object.keys(p.a).length||Object.keys(p.c).length||p.bilan||p.pistes||p.verdict)return true;
@@ -904,6 +905,7 @@ function buildItem(it){
   function storeA(){
     var q=P();
     if(taA.value)q.a[id]=taA.value; else delete q.a[id];
+    if(aLie()){var o=S.p[1-S.cur]; if(taA.value)o.a[id]=taA.value; else delete o.a[id];}
     refresh();paint();
     save();
   }
@@ -973,6 +975,24 @@ function area(key,label){
 }
 /* le bilan est le même pour les 2 arbitres tant que la case est cochée (info.bilanDiff vide) */
 function bilanLie(){return !S.info.bilanDiff;}
+/* les « Points à améliorer » (item par item) sont les mêmes pour les 2 arbitres tant que la case est cochée (info.aDiff vide) */
+function aLie(){return !S.info.aDiff;}
+function aCase(){
+  var cb=h('input',{type:'checkbox',id:'a-lie'});
+  cb.checked=aLie();
+  cb.addEventListener('change',function(){
+    var cur=P().a, o=S.p[1-S.cur];
+    if(cb.checked){
+      if(Object.keys(o.a).length&&JSON.stringify(o.a)!==JSON.stringify(cur)&&!confirm("Les points à améliorer de "+refName(1-S.cur)+" seront remplacés par ceux de "+refName(S.cur)+". Continuer ?")){cb.checked=false;return;}
+      S.info.aDiff='';
+      o.a=JSON.parse(JSON.stringify(cur));
+    }else{
+      S.info.aDiff='1';
+    }
+    save();
+  });
+  return h('label',{class:'lnk','for':'a-lie'},[cb,h('span',{text:"Mêmes points à améliorer pour les 2 arbitres"})]);
+}
 function bilanCase(){
   var cb=h('input',{type:'checkbox',id:'bilan-lie'});
   cb.checked=bilanLie();
@@ -1797,6 +1817,7 @@ function mountRef(){
   var cntBtn=h('button',{type:'button',class:'mini',text:S.hideCnt?'Afficher les compteurs':'Masquer les compteurs'});
   cntBtn.addEventListener('click',function(){S.hideCnt=!S.hideCnt;saveLocalOnly();mountRef();});
   refwrap.appendChild(h('div',{class:'who',id:'sec-who'},[h('span',{class:'wl',text:'Fiche de'}),R.who,cntBtn]));
+  refwrap.appendChild(h('div',{class:'f'},[aCase()]));
   SECTIONS.forEach(function(s){refwrap.appendChild(buildSection(s));});
   refwrap.appendChild(buildBilan());
   refwrap.appendChild(buildResult());
