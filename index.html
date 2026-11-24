@@ -1049,8 +1049,6 @@ function textFor(i,plain){
     s.items.forEach(function(it){
       var v=p.r[it.id];
       L.push('- '+it.t+(it.g?' [grisée]':'')+' : '+(v?RATE_LABEL[v]:'—'));
-      var cs=plain?'':counterText(p,it.id);
-      if(cs)L.push('    Compteurs : '+cs);
       if(!plain&&p.n[it.id])L.push('    Commentaire : '+p.n[it.id].replace(/\n/g,'\n    '));
       if(!plain&&v==='i'&&p.a[it.id])L.push('    À améliorer : '+p.a[it.id].replace(/\n/g,'\n    '));
     });
@@ -1100,7 +1098,7 @@ function buildActions(){
   var dlBtn=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Enregistrer (.txt)'});
   var refBtn=h('button',{type:'button',class:'btn ghost',text:"Version pour l'arbitre (sans notes)"});
   refBtn.addEventListener('click',function(){renderRefView();window.scrollTo(0,0);});
-  /* fiche officielle Excel avec les commentaires et compteurs de l'observateur, une par arbitre */
+  /* fiche officielle Excel avec les commentaires de l'observateur, une par arbitre */
   R.xBtn=[0,1].map(function(i){
     var b=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Excel complet · '+refName(i)});
     b.addEventListener('click',function(){saveXlsx(i,true,R.status);});
@@ -1335,10 +1333,9 @@ function xlSpec(i,withNotes){
       var row=XL_ROWS[s.k][k], v=p.r[it.id];
       if(v)c[XL_COL[v]+row]='X';
       if(withNotes){
-        var parts=[], cs=counterText(p,it.id);
+        var parts=[];
         if(p.n[it.id])parts.push(p.n[it.id]);
         if(v==='i'&&p.a[it.id])parts.push('À améliorer : '+p.a[it.id]);
-        if(cs)parts.push(cs);
         if(parts.length){
           var t=parts.join('\n');
           c['G'+row]=t;
