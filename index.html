@@ -909,6 +909,16 @@ function buildSituation(id,ta,stored){
   var ex=h('textarea',{class:'ag',rows:'2',placeholder:'Explication de la situation… (micro du clavier pour dicter)','aria-label':'Explication'});
   var msg=h('span',{class:'qc'});
   var ok=h('button',{type:'button',class:'mini',text:'Ajouter la ligne'});
+  /* Entrée : on passe au champ suivant ; dans l'explication, Entrée ajoute la ligne (Maj+Entrée = retour à la ligne) */
+  var ordre=[qt,tps,jr,zn,ex];
+  ordre.forEach(function(c,i){
+    if(c!==ex)c.setAttribute('enterkeyhint','next'); else c.setAttribute('enterkeyhint','done');
+    c.addEventListener('keydown',function(ev){
+      if(ev.key!=='Enter'||ev.shiftKey||ev.isComposing)return;
+      ev.preventDefault();
+      if(c===ex)ok.click(); else ordre[i+1].focus();
+    });
+  });
   var undo=h('button',{type:'button',class:'mini',hidden:true,text:'Annuler la dernière ligne'});
   var form=h('div',{class:'sitform',hidden:true},[
     h('div',{class:'sitrow'},[qt,tps,posRow]),
@@ -971,7 +981,7 @@ function buildItem(it){
 
   var ta=h('textarea',{class:'ag',id:'n-'+id,rows:'2',placeholder:"Commentaire : action, n° de joueur… (micro du clavier pour dicter)",'aria-label':'Commentaire : '+it.t});
   ta.value=p.n[id]||'';
-  var sit=buildSituation(id,ta,function(){storeNote();});
+  var sit=id.charAt(0)==='b'?buildSituation(id,ta,function(){storeNote();}):null;
   /* « Point à améliorer » : seulement quand l'item est noté Insuffisant, à droite du commentaire */
   var taA=h('textarea',{class:'ag',id:'ap-'+id,rows:'3',placeholder:"Ce que l'arbitre doit travailler…",'aria-label':'Point à améliorer : '+it.t});
   taA.value=p.a[id]||'';
@@ -979,7 +989,7 @@ function buildItem(it){
   var colC=h('div',{class:'qcol'},[h('label',{'for':'n-'+id,class:'ql',text:'Commentaire'}),ta,cntC]);
   var colA=h('div',{class:'qcol',hidden:true},[h('label',{'for':'ap-'+id,class:'ql',text:'Point à améliorer'}),taA,cntA]);
   var pair=h('div',{class:'qpair'},[colC,colA]);
-  var noteBox=h('div',{class:'note',hidden:true},[pair,sit.el]);
+  var noteBox=h('div',{class:'note',hidden:true},sit?[pair,sit.el]:[pair]);
   var noteBtn=h('button',{type:'button',class:'mini'+(ta.value||(p.r[id]==='i'&&taA.value)?' has':''),'aria-expanded':'false',text:'Note'});
   var miss=h('span',{class:'miss',hidden:true,text:'à compléter'});
   function refresh(){
@@ -1011,7 +1021,7 @@ function buildItem(it){
   noteBtn.addEventListener('click',function(){toggle(noteBox,noteBtn);if(!noteBox.hidden)ta.focus();});
   ta.addEventListener('input',storeNote);
   taA.addEventListener('input',storeA);
-  ref.sitQT=sit.qt;
+  ref.sitQT=sit?sit.qt:null;
   ref.ta=ta; ref.taA=taA; ref.noteBox=noteBox; ref.noteBtn=noteBtn; ref.refresh=refresh;
   IT[id]=ref;
 

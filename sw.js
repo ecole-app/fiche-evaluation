@@ -1,5 +1,5 @@
 /* Hors connexion : la page et ses bibliothèques sont gardées en cache après la première visite. */
-const C='fiche-ead-v5';
+const C='fiche-ead-v6';
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','cloud.js','manifest.json','icon.svg']).catch(()=>{})));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
