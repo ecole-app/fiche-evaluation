@@ -394,7 +394,9 @@ function load(){
 }
 var S=load();
 if(S.info.bilanDiff===undefined&&S.p[0].bilan&&S.p[1].bilan&&S.p[0].bilan!==S.p[1].bilan)S.info.bilanDiff='1';
-if(S.info.aDiff===undefined&&JSON.stringify(S.p[0].a)!==JSON.stringify(S.p[1].a))S.info.aDiff='1';
+function aItem(id){return id.charAt(0)==='a';}
+function aPart(q){var o={r:{},n:{},a:{}};['r','n','a'].forEach(function(k){Object.keys(q[k]).forEach(function(id){if(aItem(id))o[k][id]=q[k][id];});});return JSON.stringify(o);}
+if(S.info.aDiff===undefined&&aPart(S.p[0])!==aPart(S.p[1]))S.info.aDiff='1';
 function P(){return S.p[S.cur];}
 function refName(i){
   var n=(S.info['arb'+(i+1)]||'').trim();
@@ -846,6 +848,7 @@ function setRate(id,v){
   var ref=IT[id];
   Object.keys(ref.btn).forEach(function(k){ref.btn[k].setAttribute('aria-pressed',k===cur?'true':'false');});
   if(cur==='i'&&ref.noteBox.hidden)toggle(ref.noteBox,ref.noteBtn,true);
+  if(aItem(id)&&aLie())aMiroir(id);
   ref.refresh();
   paint();save();
 }
@@ -1008,13 +1011,14 @@ function buildItem(it){
   function storeNote(){
     var q=P();
     if(ta.value)q.n[id]=ta.value; else delete q.n[id];
+    if(aItem(id)&&aLie())aMiroir(id);
     refresh();paint();
     save();
   }
   function storeA(){
     var q=P();
     if(taA.value)q.a[id]=taA.value; else delete q.a[id];
-    if(aLie()){var o=S.p[1-S.cur]; if(taA.value)o.a[id]=taA.value; else delete o.a[id];}
+    if(aItem(id)&&aLie())aMiroir(id);
     refresh();paint();
     save();
   }
@@ -1059,6 +1063,7 @@ function buildSection(s){
   var list=h('ul',{class:'items'},s.items.map(buildItem));
   return h('section',{class:'block',id:'sec-'+s.k},[
     h('div',{class:'sh'},[h('span',{class:'letter',text:s.k}),h('h2',{text:s.title}),cnt]),
+    s.k==='A'?aCase():null,
     list
   ]);
 }
@@ -1072,23 +1077,28 @@ function area(key,label){
 }
 /* le bilan est le même pour les 2 arbitres tant que la case est cochée (info.bilanDiff vide) */
 function bilanLie(){return !S.info.bilanDiff;}
-/* les « Points à améliorer » (item par item) sont les mêmes pour les 2 arbitres tant que la case est cochée (info.aDiff vide) */
+/* la partie A (Administratif) est la même pour les 2 arbitres tant que la case est cochée (info.aDiff vide) :
+   notes, commentaires et points à améliorer des items A */
 function aLie(){return !S.info.aDiff;}
+function aMiroir(id){
+  var q=S.p[S.cur], o=S.p[1-S.cur];
+  ['r','n','a'].forEach(function(k){if(q[k][id]!==undefined&&q[k][id]!=='')o[k][id]=q[k][id]; else delete o[k][id];});
+}
 function aCase(){
   var cb=h('input',{type:'checkbox',id:'a-lie'});
   cb.checked=aLie();
   cb.addEventListener('change',function(){
-    var cur=P().a, o=S.p[1-S.cur];
+    var o=S.p[1-S.cur];
     if(cb.checked){
-      if(Object.keys(o.a).length&&JSON.stringify(o.a)!==JSON.stringify(cur)&&!confirm("Les points à améliorer de "+refName(1-S.cur)+" seront remplacés par ceux de "+refName(S.cur)+". Continuer ?")){cb.checked=false;return;}
+      if(aPart(o)!==aPart(P())&&aPart(o)!==aPart({r:{},n:{},a:{}})&&!confirm("La partie A de "+refName(1-S.cur)+" sera remplacée par celle de "+refName(S.cur)+". Continuer ?")){cb.checked=false;return;}
       S.info.aDiff='';
-      o.a=JSON.parse(JSON.stringify(cur));
+      SECTIONS[0].items.forEach(function(it){aMiroir(it.id);});
     }else{
       S.info.aDiff='1';
     }
-    save();
+    paint();save();
   });
-  return h('label',{class:'lnk','for':'a-lie'},[cb,h('span',{text:"Mêmes points à améliorer pour les 2 arbitres"})]);
+  return h('label',{class:'lnk','for':'a-lie',style:'padding:8px 16px 0;display:flex'},[cb,h('span',{text:"Même partie A (administratif) pour les 2 arbitres"})]);
 }
 function bilanCase(){
   var cb=h('input',{type:'checkbox',id:'bilan-lie'});
@@ -1909,7 +1919,6 @@ function mountRef(){
   refwrap.textContent='';
   R.who=h('span',{class:'wn'});
   refwrap.appendChild(h('div',{class:'who',id:'sec-who'},[h('span',{class:'wl',text:'Fiche de'}),R.who]));
-  refwrap.appendChild(h('div',{class:'f'},[aCase()]));
   SECTIONS.forEach(function(s){refwrap.appendChild(buildSection(s));});
   refwrap.appendChild(buildBilan());
   refwrap.appendChild(buildResult());
