@@ -1250,7 +1250,6 @@ function buildActions(){
     h('div',{class:'acts'},[
       h('div',{class:'btnrow'},[copyBtn,dlBtn]),
       h('div',{class:'btnrow'},R.xBtn),
-      h('div',{class:'btnrow'},[refBtn]),
       R.status,preview,R.siteTxt,R.saveTxt,
       newBtn,confirmBox
     ])
@@ -2006,9 +2005,6 @@ function switchTo(i){
   SECTIONS.forEach(function(s){tab(s.k,'sec-'+s.k,s.k);});
   tab('Bilan','sec-bilan');
   tab('Résultat','sec-res');
-  var rv=h('button',{type:'button',text:'Version arbitre'});
-  rv.addEventListener('click',function(){renderRefView();window.scrollTo(0,0);});
-  nav.appendChild(rv);
 })();
 
 /* écran allumé pendant le match */
