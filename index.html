@@ -1191,6 +1191,10 @@ function buildText(){
   L.push(textFor(1));
   return L.join('\n');
 }
+/* « SIMSEK Cahit » → « SIMSEK_CAHIT » (sans accents ni caractères interdits dans un nom de fichier) */
+function nomFichier(s){
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
 function slug(s){
   return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
@@ -1496,7 +1500,7 @@ function saveXlsx(i,withNotes,st){
   if(!DL)return;
   st.textContent='Création du fichier Excel…';
   buildXlsx(i,withNotes).then(function(bytes){
-    var name='fiche-EAD_'+(slug(refName(i))||'arbitre')+'_'+(S.info.date||today())+(withNotes?'_observateur':'')+'.xlsx';
+    var name='EAD_'+(nomFichier(refName(i))||'ARBITRE')+'_'+(S.info.date||today())+(withNotes?'_observateur':'')+'.xlsx';
     return DL.save({filename:name,data:bytes});
   }).then(function(){
     st.textContent='Fichier Excel enregistré.';
@@ -1569,7 +1573,7 @@ function renderRefView(){
   var pv=h('textarea',{class:'preview',hidden:true,readonly:true,'aria-label':'Texte de la fiche'});
   var cp=h('button',{type:'button',class:'btn',text:'Copier la fiche'});
   cp.addEventListener('click',function(){doCopy(refText(i),st,pv,'Fiche copiée. Colle-la dans un message pour '+refName(i)+'.');});
-  function fname(ext){return 'fiche-EAD_'+(slug(refName(i))||'arbitre')+'_'+(S.info.date||today())+'.'+ext;}
+  function fname(ext){return 'EAD_'+(nomFichier(refName(i))||'ARBITRE')+'_'+(S.info.date||today())+'.'+ext;}
   var dlXlsx=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Enregistrer (.xlsx)'});
   dlXlsx.addEventListener('click',function(){saveXlsx(i,false,st);});
   var dlHtml=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Enregistrer (.html)'});
