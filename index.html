@@ -1191,9 +1191,12 @@ function buildText(){
   L.push(textFor(1));
   return L.join('\n');
 }
-/* « SIMSEK Cahit » → « SIMSEK_CAHIT » (sans accents ni caractères interdits dans un nom de fichier) */
+/* consigne du Pôle Officiels : « EAD NOM Prénom AAAA-MM-JJ » (le nom tel qu'écrit, sans caractères interdits) */
 function nomFichier(s){
-  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  return (s||'').replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function nomEad(i,suffixe,ext){
+  return 'EAD '+(nomFichier(refName(i))||'Arbitre')+' '+(S.info.date||today())+(suffixe?' '+suffixe:'')+'.'+ext;
 }
 function slug(s){
   return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
@@ -1500,7 +1503,7 @@ function saveXlsx(i,withNotes,st){
   if(!DL)return;
   st.textContent='Création du fichier Excel…';
   buildXlsx(i,withNotes).then(function(bytes){
-    var name='EAD_'+(nomFichier(refName(i))||'ARBITRE')+'_'+(S.info.date||today())+(withNotes?'_observateur':'')+'.xlsx';
+    var name=nomEad(i,withNotes?'':'(arbitre)','xlsx');
     return DL.save({filename:name,data:bytes});
   }).then(function(){
     st.textContent='Fichier Excel enregistré.';
@@ -1573,7 +1576,7 @@ function renderRefView(){
   var pv=h('textarea',{class:'preview',hidden:true,readonly:true,'aria-label':'Texte de la fiche'});
   var cp=h('button',{type:'button',class:'btn',text:'Copier la fiche'});
   cp.addEventListener('click',function(){doCopy(refText(i),st,pv,'Fiche copiée. Colle-la dans un message pour '+refName(i)+'.');});
-  function fname(ext){return 'EAD_'+(nomFichier(refName(i))||'ARBITRE')+'_'+(S.info.date||today())+'.'+ext;}
+  function fname(ext){return nomEad(i,'(arbitre)',ext);}
   var dlXlsx=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Enregistrer (.xlsx)'});
   dlXlsx.addEventListener('click',function(){saveXlsx(i,false,st);});
   var dlHtml=h('button',{type:'button',class:'btn ghost',hidden:!DL,text:'Enregistrer (.html)'});
